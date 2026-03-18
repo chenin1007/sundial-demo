@@ -24,37 +24,39 @@ body {
 /* 控制面板 */
 .control-panel {
     position: absolute;
-    top: 20px;
+    top: 80px;
     left: 20px;
     background: rgba(30, 30, 40, 0.9);
     backdrop-filter: blur(10px);
     color: white;
-    padding: 25px;
+    padding: 15px;
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     border: 1px solid rgba(255,255,255,0.1);
     z-index: 100;
-    width: 320px;
+    width: 340px;
+    max-height: 75vh;
+    overflow-y: auto;
     pointer-events: auto;
     transition: background 0.3s;
 }
 
 .control-panel h1 {
     color: white;
-    margin-bottom: 20px;
-    font-size: 1.5em;
+    margin-bottom: 12px;
+    font-size: 1.3em;
     border-bottom: 2px solid #4a90e2;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
 }
 
 .control-panel h2 {
     color: #ddd;
-    margin-bottom: 15px;
-    font-size: 1.2em;
+    margin-bottom: 10px;
+    font-size: 1.1em;
 }
 
 .control-group {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .control-group label {
@@ -70,8 +72,8 @@ body {
     background: transparent;
     cursor: pointer;
     -webkit-appearance: none;
-    -moz-appearance: none;     /* 针对 Firefox */
-    appearance: none;          /* 标准语法 */
+    -moz-appearance: none;
+    appearance: none;
 }
 
 .control-group input[type="range"]::-webkit-slider-runnable-track {
@@ -103,13 +105,13 @@ body {
 .solar-terms {
     display: flex;
     gap: 8px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
+    margin-bottom: 15px;
+    flex-wrap: nowrap;
 }
 
 .solar-terms button {
     flex: 1 1 auto;
-    padding: 8px 8px;
+    padding: 8px 4px;
     border: none;
     border-radius: 5px;
     background: #2a2a3a;
@@ -118,6 +120,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     border: 1px solid #3a3a4a;
+    white-space: nowrap;
 }
 
 .solar-terms button:hover {
@@ -131,16 +134,35 @@ body {
 .solar-terms button:nth-child(3):hover { background: #F44336; }
 .solar-terms button:nth-child(4):hover { background: #2196F3; }
 
+.latitude-buttons {
+    margin-top: 10px;
+    margin-bottom: 15px;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.latitude-buttons button {
+    flex: 1 1 auto;
+    padding: 5px 3px;
+    background: #2a2a3a;
+    color: white;
+    border: 1px solid #3a3a4a;
+    border-radius: 4px;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
 .quick-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: 6px;
+    margin-bottom: 15px;
 }
 
 .quick-buttons button {
     flex: 1 1 auto;
-    padding: 8px 12px;
+    padding: 8px 10px;
     border: none;
     border-radius: 5px;
     background: #2a2a3a;
@@ -149,6 +171,7 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     border: 1px solid #3a3a4a;
+    white-space: nowrap;
 }
 
 .quick-buttons button:hover {
@@ -157,9 +180,10 @@ body {
     transform: translateY(-2px);
 }
 
+/* 信息面板 */
 .info-panel {
     background: rgba(0,0,0,0.3);
-    padding: 15px;
+    padding: 12px;
     border-radius: 10px;
     border-left: 4px solid #4a90e2;
 }
@@ -171,16 +195,83 @@ body {
 }
 
 .info-panel p {
-    margin: 8px 0;
-    font-size: 0.95em;
+    margin: 5px 0;
+    font-size: 0.9em;
     color: #ccc;
     display: flex;
     justify-content: space-between;
+    align-items: center;
 }
 
-.info-panel span {
+.info-panel p span {
     color: #4a90e2;
     font-weight: 600;
+}
+
+/* 日照时长、日出时间、日落时间 - 突出显示 */
+.info-panel p:nth-child(5),
+.info-panel p:nth-child(6),
+.info-panel p:nth-child(7) {
+    background: linear-gradient(90deg, rgba(74, 144, 226, 0.2) 0%, rgba(74, 144, 226, 0.05) 100%);
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin: 8px -4px;
+    border-left: 4px solid #ffaa00;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+    font-weight: 600;  /* 加粗这些项的标签文字 */
+}
+
+.info-panel p:nth-child(5)::before,
+.info-panel p:nth-child(6)::before,
+.info-panel p:nth-child(7)::before {
+    content: "★";
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ffaa00;
+    font-size: 20px;
+    opacity: 0.3;
+    text-shadow: 0 0 10px #ffaa00;
+}
+
+.info-panel p:nth-child(5) span,
+.info-panel p:nth-child(6) span,
+.info-panel p:nth-child(7) span {
+    color: #ffaa00;
+    font-weight: 500;
+    font-size: 1.1em;
+    text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+    background: rgba(0,0,0,0.4);
+    padding: 3px 10px;
+    border-radius: 20px;
+    min-width: 75px;
+    text-align: center;
+    border: 1px solid rgba(255, 170, 0, 0.3);
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* 极昼极夜特殊样式 */
+.info-panel p:nth-child(5) span:contains("极昼"),
+.info-panel p:nth-child(5) span:contains("极夜"),
+.info-panel p:nth-child(6) span:contains("极昼"),
+.info-panel p:nth-child(6) span:contains("极夜"),
+.info-panel p:nth-child(7) span:contains("极昼"),
+.info-panel p:nth-child(7) span:contains("极夜") {
+    background: linear-gradient(135deg, #ff4444, #ff8844);
+    color: white;
+    text-shadow: 0 0 15px rgba(255,68,68,0.5);
+    border: 1px solid rgba(255,255,255,0.3);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.9; box-shadow: 0 0 15px #ff4444; }
+    100% { opacity: 1; }
 }
 
 /* 视角控制按钮 */
@@ -225,21 +316,82 @@ body {
     border-radius: 10px;
 }
 
+/* 自定义滚动条 */
+.control-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.control-panel::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.control-panel::-webkit-scrollbar-thumb {
+    background: #4a90e2;
+    border-radius: 3px;
+}
+
+.control-panel::-webkit-scrollbar-thumb:hover {
+    background: #5aa0f2;
+}
+
 /* 响应式调整 */
 @media (max-width: 768px) {
     .control-panel {
         width: 280px;
-        padding: 15px;
+        padding: 12px;
+        max-height: 70vh;
+        top: 60px;
+        left: 10px;
+    }
+    
+    .control-panel h1 {
+        font-size: 1.2em;
+        margin-bottom: 10px;
+    }
+    
+    .control-panel h2 {
+        font-size: 1em;
+        margin-bottom: 8px;
+    }
+    
+    .solar-terms {
+        flex-wrap: wrap;
+    }
+    
+    .solar-terms button {
+        font-size: 0.75em;
+        padding: 6px 4px;
+        white-space: normal;
+    }
+    
+    .latitude-buttons button {
+        font-size: 0.7em;
+        padding: 3px 2px;
+    }
+    
+    .quick-buttons button {
+        font-size: 0.8em;
+        padding: 6px 8px;
     }
     
     .view-controls {
         flex-wrap: wrap;
         bottom: 20px;
         right: 20px;
+        gap: 5px;
     }
     
-    .solar-terms button {
-        font-size: 0.75em;
-        padding: 6px 4px;
+    .view-controls button {
+        padding: 8px 16px;
+        font-size: 0.8em;
+    }
+    
+    .info-panel p:nth-child(5) span,
+    .info-panel p:nth-child(6) span,
+    .info-panel p:nth-child(7) span {
+        font-size: 1em;
+        min-width: 70px;
+        padding: 3px 8px;
     }
 }

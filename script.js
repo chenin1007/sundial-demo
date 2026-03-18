@@ -101,11 +101,13 @@ class SunPositionCalculator {
         const cosH = -Math.tan(latRad) * Math.tan(decRad);
         
         // 处理极昼极夜
-        if (cosH >= 1) {
-            return { sunrise: 0, sunset: 24, isPolarDay: true }; // 极昼
-        }
         if (cosH <= -1) {
-            return { sunrise: null, sunset: null, isPolarNight: true }; // 极夜
+            // cosH >= 1 表示太阳始终在地平线以上 -> 极昼
+            return { sunrise: 0, sunset: 24, isPolarDay: true, isPolarNight: false };
+        }
+        if (cosH >= 1) {
+            // cosH <= -1 表示太阳始终在地平线以下 -> 极夜
+            return { sunrise: null, sunset: null, isPolarDay: false, isPolarNight: true };
         }
         
         const H = this.radToDeg(Math.acos(cosH)) / 15; // 日出日落时角（小时）
