@@ -1,0 +1,245 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+}
+
+.container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#canvas-container {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* 控制面板 */
+.control-panel {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(30, 30, 40, 0.9);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    z-index: 100;
+    width: 320px;
+    pointer-events: auto;
+    transition: background 0.3s;
+}
+
+.control-panel h1 {
+    color: white;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    border-bottom: 2px solid #4a90e2;
+    padding-bottom: 10px;
+}
+
+.control-panel h2 {
+    color: #ddd;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.control-group {
+    margin-bottom: 20px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.control-group input[type="range"] {
+    width: 70%;
+    margin-right: 10px;
+    background: transparent;
+    cursor: pointer;
+    -webkit-appearance: none;
+    -moz-appearance: none;     /* 针对 Firefox */
+    appearance: none;          /* 标准语法 */
+}
+
+.control-group input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #333;
+    border-radius: 2px;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #4a90e2;
+    border-radius: 50%;
+    margin-top: -6px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.control-group span {
+    color: #4a90e2;
+    font-weight: 600;
+}
+
+.solar-terms {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.solar-terms button {
+    flex: 1 1 auto;
+    padding: 8px 8px;
+    border: none;
+    border-radius: 5px;
+    background: #2a2a3a;
+    color: white;
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #3a3a4a;
+}
+
+.solar-terms button:hover {
+    background: #4a90e2;
+    border-color: #4a90e2;
+    transform: translateY(-2px);
+}
+
+.solar-terms button:nth-child(1):hover { background: #4CAF50; }
+.solar-terms button:nth-child(2):hover { background: #FF9800; }
+.solar-terms button:nth-child(3):hover { background: #F44336; }
+.solar-terms button:nth-child(4):hover { background: #2196F3; }
+
+.quick-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.quick-buttons button {
+    flex: 1 1 auto;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    background: #2a2a3a;
+    color: white;
+    font-size: 0.9em;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #3a3a4a;
+}
+
+.quick-buttons button:hover {
+    background: #4a90e2;
+    border-color: #4a90e2;
+    transform: translateY(-2px);
+}
+
+.info-panel {
+    background: rgba(0,0,0,0.3);
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 4px solid #4a90e2;
+}
+
+.info-panel h3 {
+    color: #ddd;
+    margin-bottom: 10px;
+    font-size: 1em;
+}
+
+.info-panel p {
+    margin: 8px 0;
+    font-size: 0.95em;
+    color: #ccc;
+    display: flex;
+    justify-content: space-between;
+}
+
+.info-panel span {
+    color: #4a90e2;
+    font-weight: 600;
+}
+
+/* 视角控制按钮 */
+.view-controls {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+}
+
+.view-controls button {
+    padding: 10px 20px;
+    background: rgba(30, 30, 40, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid #3a3a4a;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+}
+
+.view-controls button:hover {
+    background: #4a90e2;
+    border-color: #4a90e2;
+    transform: translateY(-2px);
+}
+
+/* 加载动画 */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 1.2em;
+    z-index: 1000;
+    background: rgba(0,0,0,0.7);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .control-panel {
+        width: 280px;
+        padding: 15px;
+    }
+    
+    .view-controls {
+        flex-wrap: wrap;
+        bottom: 20px;
+        right: 20px;
+    }
+    
+    .solar-terms button {
+        font-size: 0.75em;
+        padding: 6px 4px;
+    }
+}
