@@ -1024,6 +1024,21 @@ setTimeout(function() {
         
         e.preventDefault();
     });
+
+    // 触摸事件（移动端）
+    header.addEventListener('touchstart', function(e) {
+        if (e.target === toggleBtn) return;
+        
+        isDragging = true;
+        panel.classList.add('dragging');
+        
+        const rect = panel.getBoundingClientRect();
+        const touch = e.touches[0];
+        offsetX = touch.clientX - rect.left;
+        offsetY = touch.clientY - rect.top;
+        
+        e.preventDefault();
+    });
     
     document.addEventListener('mousemove', function(e) {
         if (!isDragging) return;
