@@ -7,6 +7,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     overflow: hidden;
+    touch-action: pan-y pinch-zoom;
 }
 
 .container {
@@ -21,7 +22,24 @@ body {
     display: block;
 }
 
-/* 控制面板 */
+h1 {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    z-index: 90;
+    font-size: 1.5rem;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,0.3), transparent);
+    padding: 10px 0;
+    backdrop-filter: blur(5px);
+    margin: 0;
+}
+
+/* ===== 控制面板 ===== */
 .control-panel {
     position: absolute;
     top: 80px;
@@ -38,7 +56,8 @@ body {
     max-height: 75vh;
     overflow-y: auto;
     pointer-events: auto;
-    transition: background 0.3s, width 0.3s ease;
+    transition: all 0.3s ease;
+    touch-action: pan-y;
 }
 
 .control-panel h2 {
@@ -51,11 +70,14 @@ body {
     margin-bottom: 15px;
 }
 
+/* 修复1: 标签文字改为白色加粗 */
 .control-group label {
     display: block;
     margin-bottom: 8px;
-    color: #aaa;
+    color: white !important;
+    font-weight: bold !important;
     font-size: 0.9em;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
 
 .control-group input[type="range"] {
@@ -68,31 +90,39 @@ body {
     appearance: none;
 }
 
+/* 修复2: 滑块轨道 */
 .control-group input[type="range"]::-webkit-slider-runnable-track {
     height: 4px;
-    background: #666666;
+    background: #444;
     border-radius: 2px;
 }
 
+/* 修复2: 滑块拇指改为蓝色 */
 .control-group input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 16px;
-    height: 16px;
-    background: #808080;
+    width: 18px;
+    height: 18px;
+    background: #4a90e2 !important;
     border-radius: 50%;
-    margin-top: -6px;
+    margin-top: -7px;
     cursor: pointer;
     transition: transform 0.1s;
+    box-shadow: 0 0 10px #4a90e2;
+    border: 2px solid white;
 }
 
 .control-group input[type="range"]::-webkit-slider-thumb:hover {
-    background: #999999;
+    background: #5aa0f2 !important;
     transform: scale(1.2);
 }
 
+/* 修复2: 数值显示改为蓝色 */
 .control-group span {
-    color: #808080;
+    color: #4a90e2 !important;
     font-weight: 600;
+    background: rgba(74,144,226,0.1);
+    padding: 4px 8px;
+    border-radius: 4px;
 }
 
 .solar-terms {
@@ -139,6 +169,11 @@ body {
     border-radius: 4px;
     font-size: 0.8em;
     white-space: nowrap;
+    cursor: pointer;
+}
+
+.latitude-buttons button:hover {
+    background: #4a90e2;
 }
 
 .quick-buttons {
@@ -168,22 +203,29 @@ body {
     transform: translateY(-2px);
 }
 
-/* 视角控制按钮 - 右上角 */
+/* ===== 视角控制 ===== */
 .view-controls {
     position: absolute;
     top: 80px;
     right: 20px;
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
     z-index: 100;
     background: rgba(30, 30, 40, 0.6);
     backdrop-filter: blur(5px);
-    padding: 8px 12px;
-    border-radius: 40px;
+    padding: 12px 15px;
+    border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.view-controls button {
+.view-row {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.view-btn {
     padding: 8px 16px;
     background: transparent;
     border: 1px solid #4a90e2;
@@ -192,56 +234,50 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     font-size: 0.9em;
+    min-width: 60px;
 }
 
-.view-controls button:hover {
+.view-btn:hover {
     background: #4a90e2;
     border-color: #4a90e2;
     transform: translateY(-2px);
 }
 
-/* 加载动画 */
-.loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 1.2em;
-    z-index: 1000;
-    background: rgba(0,0,0,0.7);
-    padding: 20px;
-    border-radius: 10px;
-}
-
-/* 自定义滚动条 */
-.control-panel::-webkit-scrollbar {
-    width: 6px;
-}
-
-.control-panel::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.2);
-    border-radius: 3px;
-}
-
-.control-panel::-webkit-scrollbar-thumb {
+.view-btn.active {
     background: #4a90e2;
-    border-radius: 3px;
+    border-color: #4a90e2;
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
 }
 
-/* ===== 折叠和拖动样式 ===== */
-.panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    cursor: move;
-    user-select: none;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
+/* 修复3: 开关按钮默认亮起 */
 .toggle-btn {
+    padding: 8px 16px;
+    background: #4a90e2 !important;
+    border: 1px solid #4a90e2 !important;
+    color: white !important;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.9em;
+    min-width: 70px;
+    opacity: 1 !important;
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.5);
+}
+
+.toggle-btn.inactive {
+    background: transparent !important;
+    border-color: #666 !important;
+    color: #999 !important;
+    box-shadow: none !important;
+    opacity: 0.6 !important;
+}
+
+.toggle-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* 折叠按钮 */
+.panel-toggle-btn {
     background: #808080;
     color: white;
     border: none;
@@ -258,9 +294,51 @@ body {
     z-index: 101;
 }
 
-.toggle-btn:hover {
+.panel-toggle-btn:hover {
     background: #999999;
     transform: scale(1.05);
+}
+
+/* 加载动画 */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 1.2em;
+    z-index: 1000;
+    background: rgba(0,0,0,0.7);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+/* 滚动条 */
+.control-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.control-panel::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+}
+
+.control-panel::-webkit-scrollbar-thumb {
+    background: #4a90e2;
+    border-radius: 3px;
+}
+
+/* 折叠和拖动样式 */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    cursor: move;
+    user-select: none;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    touch-action: none; /* 修复4: 标题栏专门用于拖动 */
 }
 
 .control-panel.collapsed .panel-content {
@@ -318,7 +396,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s;
+    transition: transform 0.2s ease;
     flex-shrink: 0;
     padding: 0;
 }
@@ -342,9 +420,11 @@ body {
     min-width: 65px;
 }
 
+/* 修复5: 标签文字白色14号加粗 */
 .info-label {
-    font-size: 12px;
-    color: #aaa;
+    font-size: 14px !important;
+    color: white !important;
+    font-weight: bold !important;
     margin-bottom: 2px;
     white-space: nowrap;
 }
@@ -352,12 +432,24 @@ body {
 .info-value {
     font-size: 18px;
     font-weight: bold;
-    color: #ffffff;
 }
 
+/* 修复6: 高度角、方位角数值浅蓝色 */
+.info-item:nth-child(1) .info-value,
+.info-item:nth-child(2) .info-value {
+    color: #7ec8ff !important; /* 浅蓝色 */
+}
+
+/* 修复6: 日照时长数值橙色 */
+.info-item:nth-child(5) .info-value {
+    color: #ffaa33 !important; /* 橙色 */
+}
+
+/* 日出日落保持黄色 */
 .info-item:nth-child(3) .info-value,
 .info-item:nth-child(4) .info-value {
-    color: #ffcc00;
+    font-size: 20px;
+    color: #ebce2e;
 }
 
 .sun-info-bar.collapsed .sun-info-content {
@@ -365,14 +457,10 @@ body {
 }
 
 .sun-info-bar.collapsed .sun-info-toggle {
-    transform: rotate(90deg);
+    transform: rotate(-90deg);
 }
 
-.sun-info-bar .sun-info-toggle {
-    transform: rotate(0deg);
-}
-
-/* ===== 移动端适配 ===== */
+/* ===== 移动端适配优化 ===== */
 @media (max-width: 1080px) {
     h1 {
         font-size: 1em;
@@ -392,22 +480,30 @@ body {
     }
     
     .control-panel {
-        width: 280px;
-        top: 60px;
+        width: 300px;
         left: 10px;
-        max-height: 60vh;
+        top: 70px;
+        max-height: 70vh;
     }
     
     .view-controls {
-        top: 60px;
+        top: 70px;
         right: 10px;
-        padding: 6px 10px;
+        padding: 10px;
     }
     
-    .view-controls button {
+    .view-row {
+        gap: 5px;
+    }
+    
+    .view-btn, .toggle-btn {
         padding: 6px 12px;
         font-size: 0.8em;
         min-width: 50px;
+    }
+    
+    .toggle-btn {
+        min-width: 60px;
     }
     
     .sun-info-bar {
@@ -431,10 +527,20 @@ body {
     }
     
     .info-label {
-        font-size: 10px;
+        font-size: 12px !important;
     }
     
     .info-value {
         font-size: 14px;
+    }
+    
+    /* 修复7: 移动端拖动优化 */
+    .panel-header {
+        touch-action: none;
+        padding: 12px 5px; /* 增大触摸区域 */
+    }
+    
+    .control-panel {
+        touch-action: pan-y;
     }
 }

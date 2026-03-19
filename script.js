@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
-// 太阳位置计算类（保持不变）
+// ==================== 太阳位置计算类 ====================
 class SunPositionCalculator {
     constructor() {
         this.latitude = 40;
@@ -124,10 +124,10 @@ class SunPositionCalculator {
     }
 }
 
-// 3D场景管理类
+// ==================== 3D场景管理类 ====================
 class Sun3DVisualizer {
     constructor() {
-        this.showAzimuthLabels = true;  // 控制原有方位角标签显示
+        this.showAzimuthLabels = true;  // 修复1: 默认开启
         this.sunCalc = new SunPositionCalculator();
         this.scene = null;
         this.camera = null;
@@ -138,11 +138,13 @@ class Sun3DVisualizer {
         this.trajectoryLine = null;
         this.ground = null;
         this.pole = null;
-        this.showTrajectory = true;
+        this.showTrajectory = true;      // 修复1: 默认开启
         this.animationId = null;
         this.clock = new THREE.Clock();
-        this.azimuthTickLabels = [];  // 存储原有的方位角刻度标签
-        this.directionLabels = [];     // 存储原有的方向标签
+        this.azimuthTickLabels = [];
+        this.directionLabels = [];
+        this.isDragging = false;         // 用于拖动
+        this.longPressTimer = null;
         
         this.init();
     }
@@ -152,8 +154,7 @@ class Sun3DVisualizer {
         this.scene.background = new THREE.Color(0x87CEEB);
         
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // 修正视角：距离增加到35，确保看到整个天球（半径15）
-        this.camera.position.set(-35, 8, 0);  // 放在西边，距离35
+        this.camera.position.set(-35, 8, 0);
         this.camera.lookAt(0, 0, 0);
         
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -352,6 +353,9 @@ class Sun3DVisualizer {
             this.scene.add(label);
             this.directionLabels.push(label);
         });
+        
+        // 默认显示标签
+        this.toggleAzimuthLabels(true);
     }
 
     createCelestialSphere() {
@@ -770,36 +774,34 @@ class Sun3DVisualizer {
         this.shadowMesh.visible = true;
     }
 
-    toggleAzimuthLabels() {
-        this.showAzimuthLabels = !this.showAzimuthLabels;
+    toggleAzimuthLabels(force) {
+        if (force !== undefined) {
+            this.showAzimuthLabels = force;
+        } else {
+            this.showAzimuthLabels = !this.showAzimuthLabels;
+        }
         
-        // 控制方位角刻度标签的显示/隐藏
         this.azimuthTickLabels.forEach(label => {
             label.visible = this.showAzimuthLabels;
         });
         
-        // 控制方向标签（北东南西）的显示/隐藏
         this.directionLabels.forEach(label => {
             label.visible = this.showAzimuthLabels;
         });
     }
 
     setView(type) {
-        // 调整相机位置以确保看到整个天球（半径15）
         switch(type) {
             case 'default':
-                // 默认视角：左侧为北，右侧为南，面向东
-                this.camera.position.set(-45, 8, 0);
+                this.camera.position.set(-35, 8, 0);
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'top':
-                // 俯视：距离增加到35
-                this.camera.position.set(0, 45, 0);
+                this.camera.position.set(0, 35, 0);
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'side':
-                // 侧视：从北向南看，距离35
-                this.camera.position.set(0, 8, -45);
+                this.camera.position.set(0, 8, 35);
                 this.controls.target.set(0, 0, 0);
                 break;
         }
@@ -810,6 +812,7 @@ class Sun3DVisualizer {
         this.showTrajectory = !this.showTrajectory;
         if (!this.showTrajectory && this.trajectoryLine) {
             this.scene.remove(this.trajectoryLine);
+            this.trajectoryLine = null;
         } else {
             const date = this.getDateFromDayOfYear(parseInt(document.getElementById('day-of-year').value));
             const latitude = parseFloat(document.getElementById('latitude').value);
@@ -840,21 +843,24 @@ class Sun3DVisualizer {
     }
 }
 
-// 初始化
+// ==================== 初始化 ====================
 let visualizer;
 
+// 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', () => {
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'loading';
     loadingDiv.textContent = '加载3D场景...';
     document.body.appendChild(loadingDiv);
     
+    // 创建可视化实例
     visualizer = new Sun3DVisualizer();
     
     setTimeout(() => {
         document.body.removeChild(loadingDiv);
     }, 1000);
     
+    // 获取DOM元素
     const dayOfYearInput = document.getElementById('day-of-year');
     const dayValue = document.getElementById('day-value');
     const latitudeInput = document.getElementById('latitude');
@@ -862,13 +868,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const timeInput = document.getElementById('time');
     const timeValue = document.getElementById('time-value');
     
+    // 更新显示函数
     function updateDisplay() {
         const dayOfYear = parseInt(dayOfYearInput.value);
         const date = visualizer.getDateFromDayOfYear(dayOfYear);
-        
-        const sliderValue = parseFloat(latitudeInput.value);
-        const latitude = 90 - sliderValue;
-        
+        const latitude = parseFloat(latitudeInput.value);
         const time = parseFloat(timeInput.value);
         
         const month = date.getMonth() + 1;
@@ -886,14 +890,12 @@ document.addEventListener('DOMContentLoaded', () => {
         visualizer.updateSunPosition(date, latitude, time);
     }
     
-    latitudeInput.min = 0;
-    latitudeInput.max = 180;
-    latitudeInput.value = 50;
-    
+    // 添加事件监听
     dayOfYearInput.addEventListener('input', updateDisplay);
     latitudeInput.addEventListener('input', updateDisplay);
     timeInput.addEventListener('input', updateDisplay);
     
+    // 节气按钮
     document.getElementById('vernal-equinox').addEventListener('click', () => {
         dayOfYearInput.value = 80;
         updateDisplay();
@@ -914,85 +916,102 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDisplay();
     });
     
-    const arcticCircleBtn = document.getElementById('arctic-circle');
-    const tropicCancerBtn = document.getElementById('tropic-cancer');
-    const equatorBtn = document.getElementById('equator');
-    const tropicCapricornBtn = document.getElementById('tropic-capricorn');
-    const antarcticCircleBtn = document.getElementById('antarctic-circle');
-    
-    if (arcticCircleBtn) {
-        arcticCircleBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - 66.5;
-            updateDisplay();
-        });
-    }
-    
-    if (tropicCancerBtn) {
-        tropicCancerBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - 23.5;
-            updateDisplay();
-        });
-    }
-    
-    if (equatorBtn) {
-        equatorBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - 0;
-            updateDisplay();
-        });
-    }
-    
-    if (tropicCapricornBtn) {
-        tropicCapricornBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - (-23.5);
-            updateDisplay();
-        });
-    }
-    
-    if (antarcticCircleBtn) {
-        antarcticCircleBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - (-66.5);
-            updateDisplay();
-        });
-    }
-    
-    window.setTime = async function(type) {
-        const dayOfYear = parseInt(dayOfYearInput.value);
-        const date = visualizer.getDateFromDayOfYear(dayOfYear);
-        const sliderValue = parseFloat(latitudeInput.value);
-        const latitude = 90 - sliderValue;
-        
-        const { sunrise, sunset, isPolarDay, isPolarNight } = visualizer.sunCalc.calculateSunriseSunset(date, latitude);
-        
-        switch(type) {
-            case 'sunrise':
-                if (!isPolarDay && !isPolarNight && sunrise !== null) {
-                    timeInput.value = sunrise;
-                }
-                break;
-            case 'noon':
-                timeInput.value = 12;
-                break;
-            case 'sunset':
-                if (!isPolarDay && !isPolarNight && sunset !== null) {
-                    timeInput.value = sunset;
-                }
-                break;
-        }
+    // 纬度快捷按钮
+    document.getElementById('arctic-circle').addEventListener('click', () => {
+        latitudeInput.value = 66.5;
         updateDisplay();
-    };
+    });
     
-    window.setView = (type) => visualizer.setView(type);
-    window.toggleTrajectory = () => visualizer.toggleTrajectory();
-    window.toggleAzimuth = () => visualizer.toggleAzimuthLabels();
+    document.getElementById('tropic-cancer').addEventListener('click', () => {
+        latitudeInput.value = 23.5;
+        updateDisplay();
+    });
     
+    document.getElementById('equator').addEventListener('click', () => {
+        latitudeInput.value = 0;
+        updateDisplay();
+    });
+    
+    document.getElementById('tropic-capricorn').addEventListener('click', () => {
+        latitudeInput.value = -23.5;
+        updateDisplay();
+    });
+    
+    document.getElementById('antarctic-circle').addEventListener('click', () => {
+        latitudeInput.value = -66.5;
+        updateDisplay();
+    });
+    
+    // 初始化更新
     updateDisplay();
 });
 
-// ===== 面板拖动和折叠功能（单独的事件监听）=====
+// ==================== 全局函数 ====================
+window.setView = function(type) {
+    if (!visualizer) return;
+    visualizer.setView(type);
+    
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const activeBtn = document.querySelector(`[onclick="setView('${type}')"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+};
+
+window.toggleAzimuth = function() {
+    if (!visualizer) return;
+    visualizer.toggleAzimuthLabels();
+    const btn = document.getElementById('azimuthBtn');
+    if (btn) {
+        btn.classList.toggle('inactive');
+    }
+};
+
+window.toggleTrajectory = function() {
+    if (!visualizer) return;
+    visualizer.toggleTrajectory();
+    const btn = document.getElementById('trajectoryBtn');
+    if (btn) {
+        btn.classList.toggle('inactive');
+    }
+};
+
+window.setTime = function(type) {
+    if (!visualizer) return;
+    
+    const dayOfYear = parseInt(document.getElementById('day-of-year').value);
+    const date = visualizer.getDateFromDayOfYear(dayOfYear);
+    const latitude = parseFloat(document.getElementById('latitude').value);
+    const timeInput = document.getElementById('time');
+    
+    const { sunrise, sunset, isPolarDay, isPolarNight } = visualizer.sunCalc.calculateSunriseSunset(date, latitude);
+    
+    switch(type) {
+        case 'sunrise':
+            if (!isPolarDay && !isPolarNight && sunrise !== null) {
+                timeInput.value = sunrise;
+            }
+            break;
+        case 'noon':
+            timeInput.value = 12;
+            break;
+        case 'sunset':
+            if (!isPolarDay && !isPolarNight && sunset !== null) {
+                timeInput.value = sunset;
+            }
+            break;
+    }
+    
+    // 触发更新
+    timeInput.dispatchEvent(new Event('input'));
+};
+
+// ==================== 面板拖动和折叠功能 ====================
 setTimeout(function() {
-    // 控制面板折叠和拖动
     const panel = document.getElementById('controlPanel');
     const toggleBtn = document.getElementById('togglePanel');
+    const sunInfoBar = document.getElementById('sunInfoBar');
+    const sunInfoToggle = document.getElementById('toggleSunInfo');
     
     if (!panel || !toggleBtn) {
         console.error('找不到控制面板元素');
@@ -1008,63 +1027,72 @@ setTimeout(function() {
         toggleBtn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
     });
     
-    // 拖动功能
+    // 拖动功能 - 修复移动端
     let isDragging = false;
     let offsetX, offsetY;
+    let startX, startY;
     let longPressTimer = null;
-    const LONG_PRESS_DURATION = 300; // 长按300ms后启用拖动
+    const LONG_PRESS_DURATION = 300;
 
+    // 鼠标事件
     header.addEventListener('mousedown', function(e) {
         if (e.target === toggleBtn) return;
         
-        isDragging = true;
-        panel.classList.add('dragging');
-        
-        const rect = panel.getBoundingClientRect();
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
-        
         e.preventDefault();
+        startDrag(e.clientX, e.clientY);
     });
 
-    // 触摸事件（移动端）- 长按后拖拽
+    // 触摸事件 - 修复移动端
     header.addEventListener('touchstart', function(e) {
         if (e.target === toggleBtn) return;
         
-        // 清除之前的定时器
+        e.preventDefault();
+        const touch = e.touches[0];
+        
+        // 使用长按来触发拖动，避免与滚动冲突
         if (longPressTimer) {
             clearTimeout(longPressTimer);
         }
         
-        // 设置长按定时器
         longPressTimer = setTimeout(() => {
-            isDragging = true;
-            panel.classList.add('dragging');
-            
-            const rect = panel.getBoundingClientRect();
-            const touch = e.touches[0];
-            offsetX = touch.clientX - rect.left;
-            offsetY = touch.clientY - rect.top;
-            
-            // 可选：震动反馈（部分浏览器支持）
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-            
-            // 提示用户已进入拖拽模式（可选）
-            panel.style.transition = 'none';
-            
+            startDrag(touch.clientX, touch.clientY);
             longPressTimer = null;
         }, LONG_PRESS_DURATION);
-        
-        e.preventDefault();
     });
+    
+    function startDrag(clientX, clientY) {
+        isDragging = true;
+        panel.classList.add('dragging');
+        
+        const rect = panel.getBoundingClientRect();
+        offsetX = clientX - rect.left;
+        offsetY = clientY - rect.top;
+        
+        panel.style.transition = 'none';
+    }
     
     document.addEventListener('mousemove', function(e) {
         if (!isDragging) return;
-        
-        let newX = e.clientX - offsetX;
-        let newY = e.clientY - offsetY;
+        e.preventDefault();
+        drag(e.clientX, e.clientY);
+    });
+    
+    document.addEventListener('touchmove', function(e) {
+        if (!isDragging) {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            return;
+        }
+        e.preventDefault();
+        const touch = e.touches[0];
+        drag(touch.clientX, touch.clientY);
+    });
+    
+    function drag(clientX, clientY) {
+        let newX = clientX - offsetX;
+        let newY = clientY - offsetY;
         
         const panelWidth = panel.offsetWidth;
         const panelHeight = panel.offsetHeight;
@@ -1076,18 +1104,25 @@ setTimeout(function() {
         
         panel.style.left = newX + 'px';
         panel.style.top = newY + 'px';
-    });
+    }
     
-    document.addEventListener('mouseup', function() {
+    function stopDrag() {
         if (isDragging) {
             isDragging = false;
             panel.classList.remove('dragging');
+            panel.style.transition = '';
         }
-    });
-    // 太阳信息栏折叠功能
-    const sunInfoBar = document.getElementById('sunInfoBar');
-    const sunInfoToggle = document.getElementById('toggleSunInfo');
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    }
     
+    document.addEventListener('mouseup', stopDrag);
+    document.addEventListener('touchend', stopDrag);
+    document.addEventListener('touchcancel', stopDrag);
+    
+    // 太阳信息栏折叠
     if (sunInfoBar && sunInfoToggle) {
         sunInfoToggle.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1096,5 +1131,15 @@ setTimeout(function() {
         });
     }
     
-    console.log('面板拖动和折叠功能已初始化');
+    // 初始化按钮状态
+    setTimeout(() => {
+        // 方位角和轨迹按钮默认active (已经在HTML中设置active类)
+        // 确保它们的状态与visualizer一致
+        if (visualizer) {
+            visualizer.showAzimuthLabels = true;
+            visualizer.showTrajectory = true;
+            visualizer.toggleAzimuthLabels(true);
+        }
+    }, 500);
+    
 }, 500);

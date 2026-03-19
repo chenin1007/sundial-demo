@@ -18,14 +18,13 @@
     <div class="container">
         <h1>Captain's太阳视运动模拟器</h1>
         
-        <!-- 控制面板 - 只有一个 -->
+        <!-- 控制面板 -->
         <div class="control-panel" id="controlPanel">
             <div class="panel-header">
                 <h2>控制参数</h2>
-                <button class="toggle-btn" id="togglePanel">−</button>
+                <button class="panel-toggle-btn" id="togglePanel">−</button>
             </div>
 
-            <!-- 所有控制内容放在 panel-content 内 -->
             <div class="panel-content">
                 <div class="control-group">
                     <label>📅 日期：</label>
@@ -46,12 +45,12 @@
                     <span id="latitude-value">40°</span>
                 </div>
 
-                <div class="latitude-buttons" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
-                    <button id="arctic-circle" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">北极圈</button>
-                    <button id="tropic-cancer" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">北回归线</button>
-                    <button id="equator" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">赤道</button>
-                    <button id="tropic-capricorn" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">南回归线</button>
-                    <button id="antarctic-circle" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">南极圈</button>
+                <div class="latitude-buttons">
+                    <button id="arctic-circle">北极圈</button>
+                    <button id="tropic-cancer">北回归线</button>
+                    <button id="equator">赤道</button>
+                    <button id="tropic-capricorn">南回归线</button>
+                    <button id="antarctic-circle">南极圈</button>
                 </div>
                 
                 <div class="control-group">
@@ -68,19 +67,22 @@
             </div>
         </div>
         
-        <!-- 视角控制 - 右上角 -->
+        <!-- 视角控制 -->
         <div class="view-controls">
-            <button onclick="setView('default')">默认</button>
-            <button onclick="setView('top')">俯视</button>
-            <button onclick="setView('side')">侧视</button>
-            <button onclick="toggleAzimuth()">方位角</button>
-            <button onclick="toggleTrajectory()">轨迹</button>
+            <div class="view-row">
+                <button class="view-btn active" onclick="setView('default')">默认</button>
+                <button class="view-btn" onclick="setView('top')">俯视</button>
+                <button class="view-btn" onclick="setView('side')">侧视</button>
+            </div>
+            <div class="view-row">
+                <button class="toggle-btn active" id="azimuthBtn" onclick="toggleAzimuth()">方位角</button>
+                <button class="toggle-btn active" id="trajectoryBtn" onclick="toggleTrajectory()">轨迹</button>
+            </div>
         </div>
 
-        <!-- 3D画布容器 -->
         <div id="canvas-container"></div>
         
-        <!-- 太阳信息 - 独立面板，左下角横向显示 -->
+        <!-- 太阳信息栏 -->
         <div class="sun-info-bar" id="sunInfoBar">
             <button class="sun-info-toggle" id="toggleSunInfo">▶</button>
             <div class="sun-info-content">
