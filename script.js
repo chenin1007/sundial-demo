@@ -1011,7 +1011,9 @@ setTimeout(function() {
     // 拖动功能
     let isDragging = false;
     let offsetX, offsetY;
-    
+    let longPressTimer = null;
+    const LONG_PRESS_DURATION = 300; // 长按300ms后启用拖动
+
     header.addEventListener('mousedown', function(e) {
         if (e.target === toggleBtn) return;
         
@@ -1025,17 +1027,35 @@ setTimeout(function() {
         e.preventDefault();
     });
 
-    // 触摸事件（移动端）
+    // 触摸事件（移动端）- 长按后拖拽
     header.addEventListener('touchstart', function(e) {
         if (e.target === toggleBtn) return;
         
-        isDragging = true;
-        panel.classList.add('dragging');
+        // 清除之前的定时器
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+        }
         
-        const rect = panel.getBoundingClientRect();
-        const touch = e.touches[0];
-        offsetX = touch.clientX - rect.left;
-        offsetY = touch.clientY - rect.top;
+        // 设置长按定时器
+        longPressTimer = setTimeout(() => {
+            isDragging = true;
+            panel.classList.add('dragging');
+            
+            const rect = panel.getBoundingClientRect();
+            const touch = e.touches[0];
+            offsetX = touch.clientX - rect.left;
+            offsetY = touch.clientY - rect.top;
+            
+            // 可选：震动反馈（部分浏览器支持）
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+            
+            // 提示用户已进入拖拽模式（可选）
+            panel.style.transition = 'none';
+            
+            longPressTimer = null;
+        }, LONG_PRESS_DURATION);
         
         e.preventDefault();
     });

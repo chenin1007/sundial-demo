@@ -192,7 +192,6 @@ body {
     cursor: pointer;
     transition: all 0.2s;
     font-size: 0.9em;
-    min-width: 60px;
 }
 
 .view-controls button:hover {
@@ -374,9 +373,9 @@ body {
 }
 
 /* ===== 移动端适配 ===== */
-@media (max-width: 768px) {
+@media (max-width: 1080px) {
     h1 {
-        font-size: 1.2em;
+        font-size: 1em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
