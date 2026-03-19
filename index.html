@@ -16,7 +16,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🌞 3D太阳视运动与日影模拟器</h1>
+        <h1>Captain's太阳视运动模拟器</h1>
         
         <!-- 控制面板 - 只有一个 -->
         <div class="control-panel" id="controlPanel">
@@ -68,6 +68,15 @@
             </div>
         </div>
         
+        <!-- 视角控制 - 右上角 -->
+        <div class="view-controls">
+            <button onclick="setView('default')">默认</button>
+            <button onclick="setView('top')">俯视</button>
+            <button onclick="setView('side')">侧视</button>
+            <button onclick="toggleAzimuth()">方位角</button>
+            <button onclick="toggleTrajectory()">轨迹</button>
+        </div>
+
         <!-- 3D画布容器 -->
         <div id="canvas-container"></div>
         
@@ -84,10 +93,6 @@
                     <span class="info-value" id="azimuth">--</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">日照时长</span>
-                    <span class="info-value" id="day-length">--</span>
-                </div>
-                <div class="info-item">
                     <span class="info-label">日出</span>
                     <span class="info-value" id="sunrise-time">--</span>
                 </div>
@@ -95,17 +100,13 @@
                     <span class="info-label">日落</span>
                     <span class="info-value" id="sunset-time">--</span>
                 </div>
+                <div class="info-item">
+                    <span class="info-label">日照时长</span>
+                    <span class="info-value" id="day-length">--</span>
+                </div>
             </div>
         </div>
 
-        <!-- 视角控制 -->
-        <div class="view-controls">
-            <button onclick="setView('default')">默认视角</button>
-            <button onclick="setView('top')">俯视</button>
-            <button onclick="setView('side')">侧视</button>
-            <button onclick="toggleAzimuth()">🎯 方位角</button>
-            <button onclick="toggleTrajectory()">🔄 轨迹</button>
-        </div>
     </div>
     
     <script type="module" src="script.js"></script>
