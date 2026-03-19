@@ -18,70 +18,93 @@
     <div class="container">
         <h1>🌞 3D太阳视运动与日影模拟器</h1>
         
-        <!-- 控制面板 -->
-        <div class="control-panel">
-            <h2>控制参数</h2>
-            
-            <div class="control-group">
-                <label>📅 日期：</label>
-                <input type="range" id="day-of-year" min="1" max="365" value="80" step="1">
-                <span id="day-value">3月21日</span>
-            </div>
-            
-            <div class="solar-terms">
-                <button id="vernal-equinox">🌱 春分</button>
-                <button id="summer-solstice">☀️ 夏至</button>
-                <button id="autumnal-equinox">🍂 秋分</button>
-                <button id="winter-solstice">❄️ 冬至</button>
-            </div>
-            
-            <div class="control-group">
-                <label>🌍 纬度：</label>
-                <input type="range" id="latitude" min="-90" max="90" value="40" step="0.1">
-                <span id="latitude-value">40°</span>
+        <!-- 控制面板 - 只有一个 -->
+        <div class="control-panel" id="controlPanel">
+            <div class="panel-header">
+                <h2>控制参数</h2>
+                <button class="toggle-btn" id="togglePanel">−</button>
             </div>
 
-            <div class="latitude-buttons" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
-                <button id="arctic-circle" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">北极圈</button>
-                <button id="tropic-cancer" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">北回归线</button>
-                <button id="equator" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">赤道</button>
-                <button id="tropic-capricorn" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">南回归线</button>
-                <button id="antarctic-circle" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">南极圈</button>
-            </div>
-            
-            <div class="control-group">
-                <label>⏰ 地方时：</label>
-                <input type="range" id="time" min="0" max="24" value="12" step="0.1">
-                <span id="time-value">12:00</span>
-            </div>
-            
-            <div class="quick-buttons">
-                <button onclick="setTime('sunrise')">🌅 日出</button>
-                <button onclick="setTime('noon')">☀️ 正午</button>
-                <button onclick="setTime('sunset')">🌇 日落</button>
-                <button onclick="toggleTrajectory()">🔄 轨迹</button>
-            </div>
-            
-            <div class="info-panel">
-                <h3>📊 太阳信息</h3>
-                <p>高度角：<span id="altitude">--</span>°</p>
-                <p>方位角：<span id="azimuth">--</span>°</p>
-                <p>影长：<span id="shadow-length">--</span></p>
-                <p>日照时长：<span id="day-length">--</span></p>
-                <p>日出时间：<span id="sunrise-time">--</span></p>
-                <p>日落时间：<span id="sunset-time">--</span></p>
+            <!-- 所有控制内容放在 panel-content 内 -->
+            <div class="panel-content">
+                <div class="control-group">
+                    <label>📅 日期：</label>
+                    <input type="range" id="day-of-year" min="1" max="365" value="80" step="1">
+                    <span id="day-value">3月21日</span>
+                </div>
+                
+                <div class="solar-terms">
+                    <button id="vernal-equinox">🌱 春分</button>
+                    <button id="summer-solstice">☀️ 夏至</button>
+                    <button id="autumnal-equinox">🍂 秋分</button>
+                    <button id="winter-solstice">❄️ 冬至</button>
+                </div>
+                
+                <div class="control-group">
+                    <label>🌍 纬度：</label>
+                    <input type="range" id="latitude" min="-90" max="90" value="40" step="0.1">
+                    <span id="latitude-value">40°</span>
+                </div>
+
+                <div class="latitude-buttons" style="margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap;">
+                    <button id="arctic-circle" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">北极圈</button>
+                    <button id="tropic-cancer" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">北回归线</button>
+                    <button id="equator" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">赤道</button>
+                    <button id="tropic-capricorn" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">南回归线</button>
+                    <button id="antarctic-circle" style="flex: 1; padding: 5px; background: #2a2a3a; color: white; border: 1px solid #3a3a4a; border-radius: 4px;">南极圈</button>
+                </div>
+                
+                <div class="control-group">
+                    <label>⏰ 地方时：</label>
+                    <input type="range" id="time" min="0" max="24" value="12" step="0.1">
+                    <span id="time-value">12:00</span>
+                </div>
+                
+                <div class="quick-buttons">
+                    <button onclick="setTime('sunrise')">🌅 日出</button>
+                    <button onclick="setTime('noon')">☀️ 正午</button>
+                    <button onclick="setTime('sunset')">🌇 日落</button>
+                </div>
             </div>
         </div>
         
         <!-- 3D画布容器 -->
         <div id="canvas-container"></div>
         
+        <!-- 太阳信息 - 独立面板，左下角横向显示 -->
+        <div class="sun-info-bar" id="sunInfoBar">
+            <button class="sun-info-toggle" id="toggleSunInfo">▶</button>
+            <div class="sun-info-content">
+                <div class="info-item">
+                    <span class="info-label">高度角</span>
+                    <span class="info-value" id="altitude">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">方位角</span>
+                    <span class="info-value" id="azimuth">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">日照时长</span>
+                    <span class="info-value" id="day-length">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">日出</span>
+                    <span class="info-value" id="sunrise-time">--</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">日落</span>
+                    <span class="info-value" id="sunset-time">--</span>
+                </div>
+            </div>
+        </div>
+
         <!-- 视角控制 -->
         <div class="view-controls">
             <button onclick="setView('default')">默认视角</button>
             <button onclick="setView('top')">俯视</button>
             <button onclick="setView('side')">侧视</button>
-            <button onclick="setView('follow')">跟随太阳</button>
+            <button onclick="toggleAzimuth()">🎯 方位角</button>
+            <button onclick="toggleTrajectory()">🔄 轨迹</button>
         </div>
     </div>
     

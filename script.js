@@ -102,15 +102,13 @@ class SunPositionCalculator {
         
         // 处理极昼极夜
         if (cosH <= -1) {
-            // cosH >= 1 表示太阳始终在地平线以上 -> 极昼
             return { sunrise: 0, sunset: 24, isPolarDay: true, isPolarNight: false };
         }
         if (cosH >= 1) {
-            // cosH <= -1 表示太阳始终在地平线以下 -> 极夜
             return { sunrise: null, sunset: null, isPolarDay: false, isPolarNight: true };
         }
         
-        const H = this.radToDeg(Math.acos(cosH)) / 15; // 日出日落时角（小时）
+        const H = this.radToDeg(Math.acos(cosH)) / 15;
         
         const sunrise = 12 - H;
         const sunset = 12 + H;
@@ -129,6 +127,7 @@ class SunPositionCalculator {
 // 3D场景管理类
 class Sun3DVisualizer {
     constructor() {
+        this.showAzimuthLabels = true;  // 控制原有方位角标签显示
         this.sunCalc = new SunPositionCalculator();
         this.scene = null;
         this.camera = null;
@@ -142,28 +141,27 @@ class Sun3DVisualizer {
         this.showTrajectory = true;
         this.animationId = null;
         this.clock = new THREE.Clock();
+        this.azimuthTickLabels = [];  // 存储原有的方位角刻度标签
+        this.directionLabels = [];     // 存储原有的方向标签
         
         this.init();
     }
 
     init() {
-        // 创建场景
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x87CEEB);
         
-        // 创建相机
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(15, 8, 20);
+        // 修正视角：距离增加到35，确保看到整个天球（半径15）
+        this.camera.position.set(-35, 8, 0);  // 放在西边，距离35
         this.camera.lookAt(0, 0, 0);
         
-        // 创建WebGL渲染器
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('canvas-container').appendChild(this.renderer.domElement);
         
-        // 创建CSS2渲染器
         this.labelRenderer = new CSS2DRenderer();
         this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
         this.labelRenderer.domElement.style.position = 'absolute';
@@ -172,7 +170,6 @@ class Sun3DVisualizer {
         this.labelRenderer.domElement.style.pointerEvents = 'none';
         document.getElementById('canvas-container').appendChild(this.labelRenderer.domElement);
         
-        // 控制器
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
@@ -180,7 +177,6 @@ class Sun3DVisualizer {
         this.controls.enableZoom = true;
         this.controls.maxPolarAngle = Math.PI / 2;
         
-        // 初始化场景元素
         this.createSky();
         this.createGround();
         this.createCelestialSphere();
@@ -188,15 +184,19 @@ class Sun3DVisualizer {
         this.createPole();
         this.createLights();
         
-        // 开始动画循环
+        // 收集所有方位相关的标签
+        this.collectLabels();
+        
         this.animate();
         
-        // 窗口大小自适应
         window.addEventListener('resize', () => this.onWindowResize());
     }
 
+    collectLabels() {
+        // 这个方法会在创建标签时被调用，存储标签引用
+    }
+
     createSky() {
-        // 云彩效果
         const cloudGeometry = new THREE.BufferGeometry();
         const cloudCount = 150;
         const cloudPositions = new Float32Array(cloudCount * 3);
@@ -220,7 +220,6 @@ class Sun3DVisualizer {
         this.clouds = new THREE.Points(cloudGeometry, cloudMaterial);
         this.scene.add(this.clouds);
         
-        // 星星
         const starsGeometry = new THREE.BufferGeometry();
         const starsCount = 2500;
         const starsPositions = new Float32Array(starsCount * 3);
@@ -249,7 +248,6 @@ class Sun3DVisualizer {
     }
 
     createGround() {
-        // 地面大小与天球一致（半径15）
         const groundRadius = 15;
         const groundGeometry = new THREE.CircleGeometry(groundRadius, 64);
         const groundMaterial = new THREE.MeshStandardMaterial({
@@ -263,16 +261,14 @@ class Sun3DVisualizer {
         this.ground.receiveShadow = true;
         this.scene.add(this.ground);
         
-        // 十字线延伸到地面边缘
         const lineMaterial = new THREE.LineBasicMaterial({ 
             color: 0xffffff, 
             linewidth: 2,
-            transparent: true,     // 启用透明度
-            opacity: 0.3           // 设置透明度为0.3，让十字线变淡 
+            transparent: true,
+            opacity: 0.3 
         });
         const crossLength = groundRadius;
         
-        // 东西线
         const eastWestPoints = [
             new THREE.Vector3(-crossLength, 0.02, 0),
             new THREE.Vector3(crossLength, 0.02, 0)
@@ -281,26 +277,21 @@ class Sun3DVisualizer {
         const eastWestLine = new THREE.Line(eastWestGeo, lineMaterial);
         this.scene.add(eastWestLine);
         
-        // 南北线
         const northSouthPoints = [
             new THREE.Vector3(0, 0.02, -crossLength),
             new THREE.Vector3(0, 0.02, crossLength)
         ];
         const northSouthGeo = new THREE.BufferGeometry().setFromPoints(northSouthPoints);
         const northSouthLine = new THREE.Line(northSouthGeo, lineMaterial);
-
         this.scene.add(northSouthLine);
         
-        // 中心点标记
         const centerSphereGeo = new THREE.SphereGeometry(0.15, 16);
         const centerSphereMat = new THREE.MeshStandardMaterial({ color: 0xffaa44 });
         const centerSphere = new THREE.Mesh(centerSphereGeo, centerSphereMat);
         centerSphere.position.set(0, 0.05, 0);
         this.scene.add(centerSphere);
         
-        // 在地面上绘制方位刻度（每隔30度一个标记）
         const tickMaterial = new THREE.LineBasicMaterial({ color: 0x88aaff });
-        const tickLength = 0.4;
         
         for (let angle = 0; angle < 360; angle += 30) {
             const rad = this.sunCalc.degToRad(angle);
@@ -317,7 +308,6 @@ class Sun3DVisualizer {
             const tickLine = new THREE.Line(tickGeo, tickMaterial);
             this.scene.add(tickLine);
             
-            // 添加角度数字标签（每隔30度）
             if (angle % 30 === 0) {
                 const div = document.createElement('div');
                 div.textContent = angle + '°';
@@ -334,10 +324,10 @@ class Sun3DVisualizer {
                 const labelZ = (crossLength + 0.5) * Math.cos(rad);
                 label.position.set(labelX, -1.5, -labelZ);
                 this.scene.add(label);
+                this.azimuthTickLabels.push(label);
             }
         }
         
-        // 修改1：东南西北标签改为简写，不加度数
         const directions = [
             { text: '北 (N)', pos: [0, 0.1, -crossLength-2.5] },
             { text: '南 (S)', pos: [0, 0.1, crossLength+2.5] },
@@ -360,14 +350,13 @@ class Sun3DVisualizer {
             const label = new CSS2DObject(div);
             label.position.set(dir.pos[0], -1, dir.pos[2]);
             this.scene.add(label);
+            this.directionLabels.push(label);
         });
     }
 
     createCelestialSphere() {
-        // 天球半径设为15，与地面一致
         const sphereRadius = 15;
         
-        // 纬线
         for (let lat = -80; lat <= 80; lat += 20) {
             const points = [];
             const radius = sphereRadius * Math.cos(this.sunCalc.degToRad(lat));
@@ -389,7 +378,6 @@ class Sun3DVisualizer {
             this.scene.add(line);
         }
         
-        // 经线
         for (let lon = 0; lon < 360; lon += 30) {
             const points = [];
             for (let lat = -90; lat <= 90; lat += 5) {
@@ -409,7 +397,6 @@ class Sun3DVisualizer {
             this.scene.add(line);
         }
         
-        // 天赤道
         const equatorPoints = [];
         for (let lon = 0; lon <= 360; lon += 5) {
             const x = sphereRadius * Math.sin(this.sunCalc.degToRad(lon));
@@ -421,7 +408,6 @@ class Sun3DVisualizer {
         const equator = new THREE.LineLoop(equatorGeo, equatorMat);
         this.scene.add(equator);
         
-        // 添加地平圈（与地面边缘重合）
         const horizonPoints = [];
         for (let lon = 0; lon <= 360; lon += 5) {
             const x = sphereRadius * Math.sin(this.sunCalc.degToRad(lon));
@@ -435,7 +421,6 @@ class Sun3DVisualizer {
     }
 
     createSun() {
-        // 太阳球体
         const geometry = new THREE.SphereGeometry(1.2, 32, 32);
         const material = new THREE.MeshStandardMaterial({
             color: 0xffdd44,
@@ -448,7 +433,6 @@ class Sun3DVisualizer {
         this.sunSphere.receiveShadow = false;
         this.scene.add(this.sunSphere);
         
-        // 太阳光晕
         const glowGeometry = new THREE.SphereGeometry(1.5, 16, 16);
         const glowMaterial = new THREE.MeshBasicMaterial({
             color: 0xffaa33,
@@ -459,7 +443,6 @@ class Sun3DVisualizer {
         const glow = new THREE.Mesh(glowGeometry, glowMaterial);
         this.sunSphere.add(glow);
         
-        // 第二层光晕
         const glow2Geometry = new THREE.SphereGeometry(1.8, 16, 16);
         const glow2Material = new THREE.MeshBasicMaterial({
             color: 0xff8833,
@@ -470,16 +453,13 @@ class Sun3DVisualizer {
         const glow2 = new THREE.Mesh(glow2Geometry, glow2Material);
         this.sunSphere.add(glow2);
         
-        // 太阳光源
         const sunLight = new THREE.PointLight(0xffaa66, 0.2, 40);
         this.sunSphere.add(sunLight);
     }
 
     createPole() {
-        // 修改2：缩小日晷杆子比例
         const poleGroup = new THREE.Group();
         
-        // 杆身
         const poleGeo = new THREE.CylinderGeometry(0.15, 0.2, 2.8, 8);
         const poleMat = new THREE.MeshStandardMaterial({
             color: 0xcc9966,
@@ -492,7 +472,6 @@ class Sun3DVisualizer {
         pole.receiveShadow = false;
         poleGroup.add(pole);
         
-        // 底座
         const baseGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 8);
         const baseMat = new THREE.MeshStandardMaterial({ 
             color: 0x886644,
@@ -504,7 +483,6 @@ class Sun3DVisualizer {
         base.castShadow = false;
         poleGroup.add(base);
         
-        // 顶部的装饰小球
         const topGeo = new THREE.SphereGeometry(0.2, 8);
         const topMat = new THREE.MeshStandardMaterial({ 
             color: 0xffaa44,
@@ -522,11 +500,9 @@ class Sun3DVisualizer {
     }
 
     createLights() {
-        // 环境光
         this.ambientLight = new THREE.AmbientLight(0x404060, 0.5);
         this.scene.add(this.ambientLight);
         
-        // 主光源（太阳光）- 用于产生阴影
         this.sunLight = new THREE.DirectionalLight(0xffeedd, 1.2);
         this.sunLight.castShadow = true;
         this.sunLight.shadow.mapSize.width = 1024;
@@ -539,13 +515,11 @@ class Sun3DVisualizer {
         this.sunLight.shadow.camera.bottom = -15;
         this.scene.add(this.sunLight);
         
-        // 补光
         this.fillLight = new THREE.PointLight(0x446688, 0.3);
         this.fillLight.position.set(-5, 5, 5);
         this.scene.add(this.fillLight);
     }
 
-    // 修改3：修复轨迹，太阳始终在天球上运动
     createTrajectory(date, latitude) {
         if (this.trajectoryLine) {
             this.scene.remove(this.trajectoryLine);
@@ -558,14 +532,12 @@ class Sun3DVisualizer {
         
         const { isPolarDay, isPolarNight } = this.sunCalc.calculateSunriseSunset(date, latitude);
         
-        // 始终绘制完整24小时轨迹，太阳始终在天球上运动
         for (let hour = 0; hour <= 24; hour += 0.2) {
             const sunPos = this.sunCalc.calculateSunPosition(date, latitude, hour);
             
             const altRad = this.sunCalc.degToRad(sunPos.altitude);
             const azRad = this.sunCalc.degToRad(sunPos.azimuth);
             
-            // 计算太阳在天球上的位置，即使在地平线下也正常计算
             const r = sphereRadius * Math.cos(altRad);
             const x = r * Math.sin(azRad);
             const z = -r * Math.cos(azRad);
@@ -577,23 +549,19 @@ class Sun3DVisualizer {
         if (points.length > 1) {
             const geometry = new THREE.BufferGeometry().setFromPoints(points);
             
-            // 根据不同情况设置颜色
             let material;
             if (isPolarNight) {
-                // 极夜用半透明蓝色
                 material = new THREE.LineBasicMaterial({ 
                     color: 0x88aaff,
                     transparent: true,
                     opacity: 0.3
                 });
             } else if (isPolarDay) {
-                // 极昼用亮橙色
                 material = new THREE.LineBasicMaterial({ 
                     color: 0xffaa44,
                     linewidth: 2
                 });
             } else {
-                // 正常情况用渐变，根据高度着色
                 const colors = [];
                 for (let i = 0; i < points.length; i++) {
                     const hour = i * 24 / points.length;
@@ -601,7 +569,6 @@ class Sun3DVisualizer {
                     
                     let color;
                     if (sunPos.altitude > 0) {
-                        // 地平线上：橙色到黄色渐变
                         const t = sunPos.altitude / 90;
                         color = new THREE.Color().lerpColors(
                             new THREE.Color(0xffaa00),
@@ -609,7 +576,6 @@ class Sun3DVisualizer {
                             t
                         );
                     } else {
-                        // 地平线下：蓝色渐变
                         const t = Math.min(1, Math.abs(sunPos.altitude) / 90);
                         color = new THREE.Color().lerpColors(
                             new THREE.Color(0x3366cc),
@@ -628,104 +594,80 @@ class Sun3DVisualizer {
         }
     }
 
-    // 修改4：更自然的天空过渡
     updateBackground(altitude) {
-
         let color;
 
         if (altitude > 25) {
-            // 下午最高亮度
             color = new THREE.Color("#8DCED5");
-    
         } else if (altitude > 15) {
-            // 清晨 → 下午
             const t = (altitude - 15) / 10;
             color = new THREE.Color().lerpColors(
                 new THREE.Color("#C1DBE9"),
                 new THREE.Color("#8DCED5"),
                 t
             );
-    
         } else if (altitude > 5) {
-            // 黎明 → 清晨
             const t = (altitude - 5) / 10;
             color = new THREE.Color().lerpColors(
                 new THREE.Color("#FEE3D7"),
                 new THREE.Color("#C1DBE9"),
                 t
             );
-    
         } else if (altitude > 0) {
-            // 日出 → 黎明
             const t = altitude / 5;
             color = new THREE.Color().lerpColors(
                 new THREE.Color("#EB9347"),
                 new THREE.Color("#FEE3D7"),
                 t
             );
-    
         } else if (altitude > -3) {
-            // 黄昏 → 日出
             const t = (altitude + 3) / 3;
             color = new THREE.Color().lerpColors(
                 new THREE.Color("#FEAC63"),
                 new THREE.Color("#EB9347"),
                 t
             );
-    
         } else if (altitude > -6) {
-            // 傍晚 → 黄昏
             const t = (altitude + 6) / 3;
             color = new THREE.Color().lerpColors(
                 new THREE.Color("#CDA492"),
                 new THREE.Color("#FEAC63"),
                 t
             );
-    
         } else if (altitude > -10) {
-            // 入夜
             const t = (altitude + 10) / 4;
             color = new THREE.Color().lerpColors(
                 new THREE.Color("#3F4F6F"),
                 new THREE.Color("#CDA492"),
                 t
             );
-    
         } else if (altitude > -18) {
-            // 午夜 → 入夜
             const t = (altitude + 18) / 8;
             color = new THREE.Color().lerpColors(
                 new THREE.Color("#20263B"),
                 new THREE.Color("#3F4F6F"),
                 t
             );
-    
         } else {
-            // 深夜
             color = new THREE.Color("#20263B");
         }
         
         this.scene.background = color;
         
-        // 星星可见度 - 只在天黑后显示
         if (this.stars) {
             if (altitude < -4) {
-                // 夜晚：星星可见
                 const opacity = Math.min(0.8, ( -altitude - 4 ) / 20);
                 this.stars.material.opacity = opacity;
                 this.stars.visible = true;
             } else if (altitude < 2) {
-                // 黄昏/黎明：星星渐隐
                 const opacity = Math.max(0, 0.3 * (1 - (altitude + 4) / 6));
                 this.stars.material.opacity = opacity;
                 this.stars.visible = opacity > 0.05;
             } else {
-                // 白天：完全隐藏星星
                 this.stars.visible = false;
             }
         }
         
-        // 云彩始终隐藏（如果不想显示）
         if (this.clouds) {
             this.clouds.visible = false;
         }
@@ -736,17 +678,9 @@ class Sun3DVisualizer {
         
         this.updateBackground(sunPos.altitude);
         
-        // 更新信息显示
         document.getElementById('altitude').textContent = sunPos.altitude.toFixed(1);
         document.getElementById('azimuth').textContent = sunPos.azimuth.toFixed(1);
-        
-        if (sunPos.altitude > 0) {
-            const shadowLength = (2.5 / Math.tan(this.sunCalc.degToRad(sunPos.altitude))).toFixed(2);
-            document.getElementById('shadow-length').textContent = shadowLength + '米';
-        } else {
-            document.getElementById('shadow-length').textContent = '无影';
-        }
-        
+                   
         const dayLength = this.sunCalc.calculateDayLength(date, latitude);
         const hours = Math.floor(dayLength);
         const minutes = Math.floor((dayLength - hours) * 60);
@@ -771,7 +705,6 @@ class Sun3DVisualizer {
                 `${sunsetHour.toString().padStart(2,'0')}:${sunsetMin.toString().padStart(2,'0')}`;
         }
         
-        // 太阳位置 - 使用与天球相同的半径
         const sphereRadius = 15;
         const altRad = this.sunCalc.degToRad(sunPos.altitude);
         const azRad = this.sunCalc.degToRad(sunPos.azimuth);
@@ -781,14 +714,11 @@ class Sun3DVisualizer {
         const z = -r * Math.cos(azRad);
         const y = sphereRadius * Math.sin(altRad);
         
-        // 太阳始终可见，因为它在天球上
         this.sunSphere.position.set(x, y, z);
         this.sunSphere.visible = true;
         
-        // 更新光源位置
         this.sunLight.position.copy(this.sunSphere.position);
         
-        // 只有在太阳在地平线上时才显示影子
         if (sunPos.altitude > 0) {
             this.updateShadow(sunPos.altitude, sunPos.azimuth);
         } else {
@@ -825,42 +755,52 @@ class Sun3DVisualizer {
                 opacity: 0.5,
                 side: THREE.DoubleSide,
                 emissive: 0x000000
-
             });
             this.shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
             this.shadowMesh.rotation.x = -Math.PI / 2;
-            this.shadowMesh.renderOrder = 2;  // 主要靠 renderOrder 控制显示顺序
+            this.shadowMesh.renderOrder = 2;
             this.shadowMesh.position.y = 0.03;
             this.scene.add(this.shadowMesh);
         }
         
         const stretch = 1 + shadowLength * 0.2;
-        this.shadowMesh.scale.set(0, 0, 1); // 保持您的设置
+        this.shadowMesh.scale.set(0, 0, 1);
         this.shadowMesh.position.set(shadowX, 0.03, shadowZ);
         this.shadowMesh.material.opacity = 0.3 + altitude * 0.015;
         this.shadowMesh.visible = true;
     }
 
+    toggleAzimuthLabels() {
+        this.showAzimuthLabels = !this.showAzimuthLabels;
+        
+        // 控制方位角刻度标签的显示/隐藏
+        this.azimuthTickLabels.forEach(label => {
+            label.visible = this.showAzimuthLabels;
+        });
+        
+        // 控制方向标签（北东南西）的显示/隐藏
+        this.directionLabels.forEach(label => {
+            label.visible = this.showAzimuthLabels;
+        });
+    }
+
     setView(type) {
+        // 调整相机位置以确保看到整个天球（半径15）
         switch(type) {
             case 'default':
-                this.camera.position.set(18, 10, 25);
+                // 默认视角：左侧为北，右侧为南，面向东
+                this.camera.position.set(-45, 8, 0);
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'top':
-                this.camera.position.set(0, 25, 0);
+                // 俯视：距离增加到35
+                this.camera.position.set(0, 45, 0);
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'side':
-                this.camera.position.set(25, 10, 0);
+                // 侧视：从北向南看，距离35
+                this.camera.position.set(0, 8, -45);
                 this.controls.target.set(0, 0, 0);
-                break;
-            case 'follow':
-                if (this.sunSphere.visible) {
-                    const sunPos = this.sunSphere.position.clone();
-                    this.camera.position.copy(sunPos.clone().multiplyScalar(1.5));
-                    this.controls.target.copy(sunPos);
-                }
                 break;
         }
         this.controls.update();
@@ -901,13 +841,15 @@ class Sun3DVisualizer {
 }
 
 // 初始化
+let visualizer;
+
 document.addEventListener('DOMContentLoaded', () => {
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'loading';
     loadingDiv.textContent = '加载3D场景...';
     document.body.appendChild(loadingDiv);
     
-    const visualizer = new Sun3DVisualizer();
+    visualizer = new Sun3DVisualizer();
     
     setTimeout(() => {
         document.body.removeChild(loadingDiv);
@@ -924,9 +866,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const dayOfYear = parseInt(dayOfYearInput.value);
         const date = visualizer.getDateFromDayOfYear(dayOfYear);
         
-        // 滑块向左为北半球（正值），向右为南半球（负值）
-        // 滑块值范围0-180，90为赤道
-        // latitude = 90 - sliderValue
         const sliderValue = parseFloat(latitudeInput.value);
         const latitude = 90 - sliderValue;
         
@@ -936,7 +875,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const day = date.getDate();
         dayValue.textContent = `${month}月${day}日`;
         
-        // 纬度显示规范
         const absLat = Math.abs(latitude);
         const direction = latitude >= 0 ? 'N' : 'S';
         latitudeValue.textContent = `${absLat.toFixed(1)}°${direction}`;
@@ -948,10 +886,9 @@ document.addEventListener('DOMContentLoaded', () => {
         visualizer.updateSunPosition(date, latitude, time);
     }
     
-    // 初始化滑块范围0-180，中间90对应赤道
     latitudeInput.min = 0;
     latitudeInput.max = 180;
-    latitudeInput.value = 50; // 对应40°N (90-40=50)
+    latitudeInput.value = 50;
     
     dayOfYearInput.addEventListener('input', updateDisplay);
     latitudeInput.addEventListener('input', updateDisplay);
@@ -977,7 +914,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDisplay();
     });
     
-    // 纬度节点按钮
     const arcticCircleBtn = document.getElementById('arctic-circle');
     const tropicCancerBtn = document.getElementById('tropic-cancer');
     const equatorBtn = document.getElementById('equator');
@@ -986,35 +922,35 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (arcticCircleBtn) {
         arcticCircleBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - 66.5; // 23.5
+            latitudeInput.value = 90 - 66.5;
             updateDisplay();
         });
     }
     
     if (tropicCancerBtn) {
         tropicCancerBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - 23.5; // 66.5
+            latitudeInput.value = 90 - 23.5;
             updateDisplay();
         });
     }
     
     if (equatorBtn) {
         equatorBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - 0; // 90
+            latitudeInput.value = 90 - 0;
             updateDisplay();
         });
     }
     
     if (tropicCapricornBtn) {
         tropicCapricornBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - (-23.5); // 113.5
+            latitudeInput.value = 90 - (-23.5);
             updateDisplay();
         });
     }
     
     if (antarcticCircleBtn) {
         antarcticCircleBtn.addEventListener('click', () => {
-            latitudeInput.value = 90 - (-66.5); // 156.5
+            latitudeInput.value = 90 - (-66.5);
             updateDisplay();
         });
     }
@@ -1047,6 +983,83 @@ document.addEventListener('DOMContentLoaded', () => {
     
     window.setView = (type) => visualizer.setView(type);
     window.toggleTrajectory = () => visualizer.toggleTrajectory();
+    window.toggleAzimuth = () => visualizer.toggleAzimuthLabels();
     
     updateDisplay();
 });
+
+// ===== 面板拖动和折叠功能（单独的事件监听）=====
+setTimeout(function() {
+    // 控制面板折叠和拖动
+    const panel = document.getElementById('controlPanel');
+    const toggleBtn = document.getElementById('togglePanel');
+    
+    if (!panel || !toggleBtn) {
+        console.error('找不到控制面板元素');
+        return;
+    }
+    
+    const header = panel.querySelector('.panel-header');
+    
+    // 折叠功能
+    toggleBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        panel.classList.toggle('collapsed');
+        toggleBtn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
+    });
+    
+    // 拖动功能
+    let isDragging = false;
+    let offsetX, offsetY;
+    
+    header.addEventListener('mousedown', function(e) {
+        if (e.target === toggleBtn) return;
+        
+        isDragging = true;
+        panel.classList.add('dragging');
+        
+        const rect = panel.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        
+        let newX = e.clientX - offsetX;
+        let newY = e.clientY - offsetY;
+        
+        const panelWidth = panel.offsetWidth;
+        const panelHeight = panel.offsetHeight;
+        const maxX = window.innerWidth - panelWidth;
+        const maxY = window.innerHeight - panelHeight;
+        
+        newX = Math.max(0, Math.min(newX, maxX));
+        newY = Math.max(0, Math.min(newY, maxY));
+        
+        panel.style.left = newX + 'px';
+        panel.style.top = newY + 'px';
+    });
+    
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            panel.classList.remove('dragging');
+        }
+    });
+    // 太阳信息栏折叠功能
+    const sunInfoBar = document.getElementById('sunInfoBar');
+    const sunInfoToggle = document.getElementById('toggleSunInfo');
+    
+    if (sunInfoBar && sunInfoToggle) {
+        sunInfoToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            sunInfoBar.classList.toggle('collapsed');
+            sunInfoToggle.textContent = sunInfoBar.classList.contains('collapsed') ? '◀' : '▶';
+        });
+    }
+    
+    console.log('面板拖动和折叠功能已初始化');
+}, 500);
