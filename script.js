@@ -323,7 +323,7 @@ class Sun3DVisualizer {
                 const label = new CSS2DObject(div);
                 const labelX = (crossLength + 0.5) * Math.sin(rad);
                 const labelZ = (crossLength + 0.5) * Math.cos(rad);
-                label.position.set(labelX, -1.5, -labelZ);
+                label.position.set(labelX, 0, -labelZ);
                 this.scene.add(label);
                 this.azimuthTickLabels.push(label);
             }
@@ -349,7 +349,7 @@ class Sun3DVisualizer {
             div.style.border = '2px solid rgba(255,255,255,0.5)';
             
             const label = new CSS2DObject(div);
-            label.position.set(dir.pos[0], -1, dir.pos[2]);
+            label.position.set(dir.pos[0], 0, dir.pos[2]);
             this.scene.add(label);
             this.directionLabels.push(label);
         });
@@ -1012,6 +1012,7 @@ setTimeout(function() {
     const toggleBtn = document.getElementById('togglePanel');
     const sunInfoBar = document.getElementById('sunInfoBar');
     const sunInfoToggle = document.getElementById('toggleSunInfo');
+    const viewControls = document.querySelector('.view-controls');
     
     if (!panel || !toggleBtn) {
         console.error('找不到控制面板元素');
@@ -1027,100 +1028,138 @@ setTimeout(function() {
         toggleBtn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
     });
     
-    // 拖动功能 - 修复移动端
-    let isDragging = false;
-    let offsetX, offsetY;
-    let startX, startY;
-    let longPressTimer = null;
-    const LONG_PRESS_DURATION = 300;
-
-    // 鼠标事件
-    header.addEventListener('mousedown', function(e) {
-        if (e.target === toggleBtn) return;
+    // 统一的拖动函数
+    function makeDraggable(element, handle, pressDuration = 150) {
+        let isDragging = false;
+        let offsetX, offsetY;
+        let longPressTimer = null;
+        let startX, startY;
         
-        e.preventDefault();
-        startDrag(e.clientX, e.clientY);
-    });
-
-    // 触摸事件 - 修复移动端
-    header.addEventListener('touchstart', function(e) {
-        if (e.target === toggleBtn) return;
+        // 保存原始位置用于边界计算
+        let originalLeft, originalTop;
         
-        e.preventDefault();
-        const touch = e.touches[0];
+        // 鼠标事件
+        handle.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            startDrag(e.clientX, e.clientY);
+        });
         
-        // 使用长按来触发拖动，避免与滚动冲突
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
+        // 触摸事件 - 使用指定的按压时间
+        handle.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+            }
+            
+            longPressTimer = setTimeout(() => {
+                startDrag(touch.clientX, touch.clientY);
+                longPressTimer = null;
+            }, pressDuration);
+        });
+        
+        function startDrag(clientX, clientY) {
+            isDragging = true;
+            element.classList.add('dragging');
+            
+            const rect = element.getBoundingClientRect();
+            offsetX = clientX - rect.left;
+            offsetY = clientY - rect.top;
+            
+            // 保存原始位置
+            originalLeft = parseFloat(element.style.left) || rect.left;
+            originalTop = parseFloat(element.style.top) || rect.top;
+            
+            element.style.transition = 'none';
         }
         
-        longPressTimer = setTimeout(() => {
-            startDrag(touch.clientX, touch.clientY);
-            longPressTimer = null;
-        }, LONG_PRESS_DURATION);
-    });
-    
-    function startDrag(clientX, clientY) {
-        isDragging = true;
-        panel.classList.add('dragging');
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            drag(e.clientX, e.clientY);
+        });
         
-        const rect = panel.getBoundingClientRect();
-        offsetX = clientX - rect.left;
-        offsetY = clientY - rect.top;
+        document.addEventListener('touchmove', function(e) {
+            if (!isDragging) {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                return;
+            }
+            e.preventDefault();
+            const touch = e.touches[0];
+            drag(touch.clientX, touch.clientY);
+        });
         
-        panel.style.transition = 'none';
-    }
-    
-    document.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        e.preventDefault();
-        drag(e.clientX, e.clientY);
-    });
-    
-    document.addEventListener('touchmove', function(e) {
-        if (!isDragging) {
+        function drag(clientX, clientY) {
+            let newX = clientX - offsetX;
+            let newY = clientY - offsetY;
+            
+            const elementWidth = element.offsetWidth;
+            const elementHeight = element.offsetHeight;
+            const maxX = window.innerWidth - elementWidth;
+            const maxY = window.innerHeight - elementHeight;
+            
+            // 限制在屏幕范围内
+            newX = Math.max(0, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
+            
+            element.style.left = newX + 'px';
+            element.style.top = newY + 'px';
+            
+            // 如果是控制面板，同时移除固定定位的top值
+            if (element === panel) {
+                element.style.top = newY + 'px';
+            }
+        }
+        
+        function stopDrag() {
+            if (isDragging) {
+                isDragging = false;
+                element.classList.remove('dragging');
+                element.style.transition = '';
+            }
             if (longPressTimer) {
                 clearTimeout(longPressTimer);
                 longPressTimer = null;
             }
-            return;
         }
-        e.preventDefault();
-        const touch = e.touches[0];
-        drag(touch.clientX, touch.clientY);
-    });
-    
-    function drag(clientX, clientY) {
-        let newX = clientX - offsetX;
-        let newY = clientY - offsetY;
         
-        const panelWidth = panel.offsetWidth;
-        const panelHeight = panel.offsetHeight;
-        const maxX = window.innerWidth - panelWidth;
-        const maxY = window.innerHeight - panelHeight;
+        document.addEventListener('mouseup', stopDrag);
+        document.addEventListener('touchend', stopDrag);
+        document.addEventListener('touchcancel', stopDrag);
         
-        newX = Math.max(0, Math.min(newX, maxX));
-        newY = Math.max(0, Math.min(newY, maxY));
-        
-        panel.style.left = newX + 'px';
-        panel.style.top = newY + 'px';
+        // 触摸移动时取消长按定时器
+        handle.addEventListener('touchmove', function(e) {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        }, { passive: true });
     }
     
-    function stopDrag() {
-        if (isDragging) {
-            isDragging = false;
-            panel.classList.remove('dragging');
-            panel.style.transition = '';
-        }
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-        }
+    // 使三个面板都可拖动，按压时间150ms
+    if (header) {
+        makeDraggable(panel, header, 150);
     }
     
-    document.addEventListener('mouseup', stopDrag);
-    document.addEventListener('touchend', stopDrag);
-    document.addEventListener('touchcancel', stopDrag);
+    if (sunInfoBar) {
+        // 使用整个信息栏作为拖动把手，但排除折叠按钮
+        const sunInfoHandle = sunInfoBar;
+        sunInfoHandle.addEventListener('touchstart', function(e) {
+            // 如果点击的是折叠按钮，不触发拖动
+            if (e.target.classList.contains('sun-info-toggle')) {
+                e.stopPropagation();
+            }
+        });
+        makeDraggable(sunInfoBar, sunInfoBar, 150);
+    }
+    
+    if (viewControls) {
+        makeDraggable(viewControls, viewControls, 150);
+    }
     
     // 太阳信息栏折叠
     if (sunInfoBar && sunInfoToggle) {
@@ -1133,8 +1172,6 @@ setTimeout(function() {
     
     // 初始化按钮状态
     setTimeout(() => {
-        // 方位角和轨迹按钮默认active (已经在HTML中设置active类)
-        // 确保它们的状态与visualizer一致
         if (visualizer) {
             visualizer.showAzimuthLabels = true;
             visualizer.showTrajectory = true;
@@ -1143,3 +1180,35 @@ setTimeout(function() {
     }, 500);
     
 }, 500);
+
+// ==================== 响应式字体大小调整 ====================
+function adjustFontSizeForMobile() {
+    if (window.innerWidth <= 768) {
+        const root = document.documentElement;
+        const width = window.innerWidth;
+        
+        // 根据屏幕宽度动态计算基础字体大小
+        let baseFontSize;
+        if (width <= 380) {
+            baseFontSize = '12px';
+        } else if (width <= 480) {
+            baseFontSize = '13px';
+        } else {
+            baseFontSize = '14px';
+        }
+        
+        root.style.fontSize = baseFontSize;
+        
+        // 调整控制面板高度
+        const panel = document.getElementById('controlPanel');
+        if (panel && !panel.classList.contains('collapsed')) {
+            const maxHeight = Math.floor(window.innerHeight * 0.3);
+            panel.style.maxHeight = maxHeight + 'px';
+        }
+    }
+}
+
+// 监听窗口大小变化
+window.addEventListener('resize', adjustFontSizeForMobile);
+// 初始化调用
+setTimeout(adjustFontSizeForMobile, 100);
