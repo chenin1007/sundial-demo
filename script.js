@@ -154,7 +154,7 @@ class Sun3DVisualizer {
         this.scene.background = new THREE.Color(0x87CEEB);
         
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(-35, 8, 0);
+        this.camera.position.set(-65, 8, -10);
         this.camera.lookAt(0, 0, 0);
         
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -253,8 +253,8 @@ class Sun3DVisualizer {
         const groundGeometry = new THREE.CircleGeometry(groundRadius, 64);
         const groundMaterial = new THREE.MeshStandardMaterial({
             color: 0x96C78C,
-            roughness: 0.99,
-            metalness: 0.01
+            roughness: 0.8,
+            metalness: 0.1
         });
         this.ground = new THREE.Mesh(groundGeometry, groundMaterial);
         this.ground.rotation.x = -Math.PI / 2;
@@ -262,9 +262,9 @@ class Sun3DVisualizer {
         this.ground.receiveShadow = true;
         this.scene.add(this.ground);
         
+        // 原有的线条和刻度保持不变
         const lineMaterial = new THREE.LineBasicMaterial({ 
             color: 0xffffff, 
-            linewidth: 2,
             transparent: true,
             opacity: 0.3 
         });
@@ -292,8 +292,8 @@ class Sun3DVisualizer {
         centerSphere.position.set(0, 0.05, 0);
         this.scene.add(centerSphere);
         
+        // 方位刻度线
         const tickMaterial = new THREE.LineBasicMaterial({ color: 0x88aaff });
-        
         for (let angle = 0; angle < 360; angle += 30) {
             const rad = this.sunCalc.degToRad(angle);
             const x1 = (crossLength - 0.8) * Math.sin(rad);
@@ -309,6 +309,7 @@ class Sun3DVisualizer {
             const tickLine = new THREE.Line(tickGeo, tickMaterial);
             this.scene.add(tickLine);
             
+            // 原有的角度标签可以保留或移除，这里保留作为参考
             if (angle % 30 === 0) {
                 const div = document.createElement('div');
                 div.textContent = angle + '°';
@@ -329,33 +330,111 @@ class Sun3DVisualizer {
             }
         }
         
+        // === 创建地面方向文字纹理（N, S, E, W）===
+        this.createDirectionMarkings(groundRadius);
+    }
+    
+    // 新增方法：创建地面方向文字纹理
+    createDirectionMarkings(radius) {
+        // 四个方向的位置和文字
         const directions = [
-            { text: '北 (N)', pos: [0, 0.1, -crossLength-2.5] },
-            { text: '南 (S)', pos: [0, 0.1, crossLength+2.5] },
-            { text: '东 (E)', pos: [crossLength+2.5, 0.1, 0] },
-            { text: '西 (W)', pos: [-crossLength-2.5, 0.1, 0] }
+            { text: 'N', pos: [0, 0.05, -radius + 2.5], color: '#ff5555', size: 2.5 }, // 北 - 红色
+            { text: 'S', pos: [0, 0.05, radius - 2.5], color: '#55ff55', size: 2.5 }, // 南 - 绿色
+            { text: 'E', pos: [radius - 2.5, 0.05, 0], color: '#5555ff', size: 2.5 }, // 东 - 蓝色
+            { text: 'W', pos: [-radius + 2.5, 0.05, 0], color: '#ffff55', size: 2.5 } // 西 - 黄色
         ];
         
         directions.forEach(dir => {
-            const div = document.createElement('div');
-            div.textContent = dir.text;
-            div.style.color = '#fff';
-            div.style.fontSize = '20px';
-            div.style.fontWeight = 'bold';
-            div.style.textShadow = '2px 2px 4px black';
-            div.style.backgroundColor = 'rgba(0,0,0,0.4)';
-            div.style.padding = '3px 6px';
-            div.style.borderRadius = '8px';
-            div.style.border = '2px solid rgba(255,255,255,0.5)';
+            // 创建Canvas纹理
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
             
-            const label = new CSS2DObject(div);
-            label.position.set(dir.pos[0], 0, dir.pos[2]);
-            this.scene.add(label);
-            this.directionLabels.push(label);
+            // 清空画布（透明背景）
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制文字
+            ctx.font = 'Bold 180px "Arial", "Microsoft YaHei", sans-serif';
+            ctx.fillStyle = dir.color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
+            ctx.fillText(dir.text, canvas.width/2, canvas.height/2);
+            
+            // 添加外发光效果
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 8;
+            ctx.strokeText(dir.text, canvas.width/2, canvas.height/2);
+            
+            // 创建纹理
+            const texture = new THREE.CanvasTexture(canvas);
+            
+            // 创建平面几何体来显示文字
+            const geometry = new THREE.PlaneGeometry(dir.size, dir.size);
+            const material = new THREE.MeshStandardMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide,
+                emissive: 0x222222,
+                emissiveIntensity: 0.2
+            });
+            
+            const textMesh = new THREE.Mesh(geometry, material);
+            
+            // 设置位置和旋转
+            textMesh.position.set(dir.pos[0], dir.pos[1] + 0.03, dir.pos[2]); // 稍微抬高避免与地面重叠
+            
+            // 根据方向旋转平面使其面向相机（始终朝上）
+            textMesh.rotation.x = -Math.PI / 2; // 平躺在地面上
+            textMesh.rotation.z = 0;
+            
+            // 对于东和西，可能需要调整方向使文字可读
+            if (dir.text === 'E' || dir.text === 'W') {
+                // 保持默认，文字会沿着X轴方向
+            }
+            
+            this.scene.add(textMesh);
         });
         
-        // 默认显示标签
-        this.toggleAzimuthLabels(true);
+        // 可选：添加方向指示箭头（作为额外的视觉元素）
+        const arrowMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x333333 });
+        
+        // 北方向箭头
+        this.createArrowMarker(0, 0.06, -radius + 1.2, 0, 0, -1, 0xff5555);
+        
+        // 南方向箭头
+        this.createArrowMarker(0, 0.06, radius - 1.2, 0, 0, 1, 0x55ff55);
+        
+        // 东方向箭头
+        this.createArrowMarker(radius - 1.2, 0.06, 0, 1, 0, 0, 0x5555ff);
+        
+        // 西方向箭头
+        this.createArrowMarker(-radius + 1.2, 0.06, 0, -1, 0, 0, 0xffff55);
+    }
+    
+    // 辅助方法：创建箭头标记（可选）
+    createArrowMarker(x, y, z, dirX, dirY, dirZ, color) {
+        const group = new THREE.Group();
+        
+        // 箭头主体
+        const arrowHelper = new THREE.ArrowHelper(
+            new THREE.Vector3(dirX, dirY, dirZ),
+            new THREE.Vector3(0, 0, 0),
+            0.8,
+            color,
+            0.6,
+            0.6
+        );
+        group.add(arrowHelper);
+        
+        group.position.set(x, y, z);
+        this.scene.add(group);
     }
 
     createCelestialSphere() {
