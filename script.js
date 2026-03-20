@@ -793,15 +793,15 @@ class Sun3DVisualizer {
     setView(type) {
         switch(type) {
             case 'default':
-                this.camera.position.set(-35, 8, 0);
+                this.camera.position.set(-55, 8, 0);
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'top':
-                this.camera.position.set(0, 35, 0);
+                this.camera.position.set(0, 55, 0);
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'side':
-                this.camera.position.set(0, 8, 35);
+                this.camera.position.set(0, 8, 55);
                 this.controls.target.set(0, 0, 0);
                 break;
         }
@@ -1021,12 +1021,13 @@ setTimeout(function() {
     
     const header = panel.querySelector('.panel-header');
     
-    // 折叠功能
-    toggleBtn.addEventListener('click', function(e) {
+    // 折叠功能 - 支持移动端触摸
+    function handlePanelToggle(e) {
         e.stopPropagation();
         panel.classList.toggle('collapsed');
         toggleBtn.textContent = panel.classList.contains('collapsed') ? '+' : '−';
-    });
+    }
+    toggleBtn.addEventListener('click', handlePanelToggle);
     
     // 统一的拖动函数
     function makeDraggable(element, handle, pressDuration = 150) {
@@ -1038,14 +1039,22 @@ setTimeout(function() {
         // 保存原始位置用于边界计算
         let originalLeft, originalTop;
         
-        // 鼠标事件
+        // 鼠标事件 - 排除折叠/切换按钮，避免点击按钮时误触发拖动
         handle.addEventListener('mousedown', function(e) {
+            const target = e.target;
+            if (target.closest && (target.closest('button') || target.closest('.panel-toggle-btn') || target.closest('.sun-info-toggle') || target.closest('.view-controls-toggle'))) {
+                return;
+            }
             e.preventDefault();
             startDrag(e.clientX, e.clientY);
         });
         
-        // 触摸事件 - 使用指定的按压时间
+        // 触摸事件 - 使用指定的按压时间，排除折叠/切换按钮的触摸
         handle.addEventListener('touchstart', function(e) {
+            const target = e.target;
+            if (target.closest && (target.closest('button') || target.closest('.panel-toggle-btn') || target.closest('.sun-info-toggle') || target.closest('.view-controls-toggle'))) {
+                return;
+            }
             e.preventDefault();
             const touch = e.touches[0];
             
@@ -1067,10 +1076,17 @@ setTimeout(function() {
             offsetX = clientX - rect.left;
             offsetY = clientY - rect.top;
             
-            // 保存原始位置
-            originalLeft = parseFloat(element.style.left) || rect.left;
-            originalTop = parseFloat(element.style.top) || rect.top;
+            // 获取包含块（.container）的 viewport 位置，将 rect 转为相对于包含块的 left/top
+            const container = element.closest('.container') || document.body;
+            const containerRect = container.getBoundingClientRect();
+            const leftPos = rect.left - containerRect.left + container.scrollLeft;
+            const topPos = rect.top - containerRect.top + container.scrollTop;
             
+            // 先设置 left/top 再清除 right/bottom，避免 right→left 切换时跳变到左侧
+            element.style.left = leftPos + 'px';
+            element.style.top = topPos + 'px';
+            element.style.right = 'auto';
+            element.style.bottom = 'auto';
             element.style.transition = 'none';
         }
         
@@ -1106,13 +1122,12 @@ setTimeout(function() {
             newX = Math.max(0, Math.min(newX, maxX));
             newY = Math.max(0, Math.min(newY, maxY));
             
+            // 持续确保不受 right/bottom 约束影响，防止面板被拉伸
+            element.style.right = 'auto';
+            element.style.bottom = 'auto';
             element.style.left = newX + 'px';
             element.style.top = newY + 'px';
             
-            // 如果是控制面板，同时移除固定定位的top值
-            if (element === panel) {
-                element.style.top = newY + 'px';
-            }
         }
         
         function stopDrag() {
@@ -1146,19 +1161,24 @@ setTimeout(function() {
     }
     
     if (sunInfoBar) {
-        // 使用整个信息栏作为拖动把手，但排除折叠按钮
-        const sunInfoHandle = sunInfoBar;
-        sunInfoHandle.addEventListener('touchstart', function(e) {
-            // 如果点击的是折叠按钮，不触发拖动
-            if (e.target.classList.contains('sun-info-toggle')) {
-                e.stopPropagation();
-            }
-        });
-        makeDraggable(sunInfoBar, sunInfoBar, 150);
+        const sunInfoDragHandle = sunInfoBar.querySelector('.sun-info-drag-handle');
+        if (sunInfoDragHandle) {
+            makeDraggable(sunInfoBar, sunInfoDragHandle, 150);
+        } else {
+            makeDraggable(sunInfoBar, sunInfoBar, 150);
+        }
     }
     
     if (viewControls) {
         makeDraggable(viewControls, viewControls, 150);
+        const viewControlsToggle = document.getElementById('toggleViewControls');
+        if (viewControlsToggle) {
+            viewControlsToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                viewControls.classList.toggle('collapsed');
+                viewControlsToggle.textContent = viewControls.classList.contains('collapsed') ? '▶' : '▼';
+            });
+        }
     }
     
     // 太阳信息栏折叠

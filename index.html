@@ -69,14 +69,13 @@
         
         <!-- 视角控制 -->
         <div class="view-controls">
-            <div class="view-row">
+            <button class="view-controls-toggle" id="toggleViewControls">▼</button>
+            <div class="view-controls-content">
                 <button class="view-btn active" onclick="setView('default')">默认</button>
                 <button class="view-btn" onclick="setView('top')">俯视</button>
                 <button class="view-btn" onclick="setView('side')">侧视</button>
-            </div>
-            <div class="view-row">
-                <button class="toggle-btn active" id="azimuthBtn" onclick="toggleAzimuth()">方位角</button>
-                <button class="toggle-btn active" id="trajectoryBtn" onclick="toggleTrajectory()">轨迹</button>
+                <button class="toggle-btn active view-toggle-special" id="azimuthBtn" onclick="toggleAzimuth()">方位角</button>
+                <button class="toggle-btn active view-toggle-special" id="trajectoryBtn" onclick="toggleTrajectory()">轨迹</button>
             </div>
         </div>
 
@@ -85,6 +84,7 @@
         <!-- 太阳信息栏 -->
         <div class="sun-info-bar" id="sunInfoBar">
             <button class="sun-info-toggle" id="toggleSunInfo">▶</button>
+            <div class="sun-info-drag-handle" title="拖动移动"></div>
             <div class="sun-info-content">
                 <div class="info-item">
                     <span class="info-label">高度角</span>
