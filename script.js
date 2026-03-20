@@ -154,7 +154,7 @@ class Sun3DVisualizer {
         this.scene.background = new THREE.Color(0x87CEEB);
         
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(-65, 8, -10);
+        this.camera.position.set(-65, 25, -30);
         this.camera.lookAt(0, 0, 0);
         
         this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -872,7 +872,7 @@ class Sun3DVisualizer {
     setView(type) {
         switch(type) {
             case 'default':
-                this.camera.position.set(-55, 8, 0);
+                this.camera.position.set(-55, 15, 0);
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'top':
@@ -880,7 +880,7 @@ class Sun3DVisualizer {
                 this.controls.target.set(0, 0, 0);
                 break;
             case 'side':
-                this.camera.position.set(0, 8, 55);
+                this.camera.position.set(0, 15, -55);
                 this.controls.target.set(0, 0, 0);
                 break;
         }
